@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="pandoc">
+  <meta name="author" content="Florian Pfingstag" />
+  <title>Disputation</title>
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="stylesheet" href="reveal.js/css/reveal.min.css"/>
+    <style type="text/css">code{white-space: pre;}</style>
+    <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" media="print" href="reveal.js/css/print/pdf.css" />
+  <!--[if lt IE 9]>
+  <script src="reveal.js/lib/js/html5shiv.js"></script>
+  <![endif]-->
+    <script src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+<section>
+    <h1 class="title">Disputation</h1>
+    <h2 class="author">Florian Pfingstag</h2>
+    <h3 class="date">29.09.2016</h3>
+</section>
+
+<section><section id="übersicht" class="titleslide slide level1"><h1>Übersicht</h1></section><section id="in-dieser-präsentation" class="slide level2">
+<h1>In dieser Präsentation</h1>
+<ul>
+<li>Theorie</li>
+<li>Histogram-based approach</li>
+<li>Single-document based approach</li>
+<li>Das scientific dataset</li>
+<li>Resultate</li>
+<li>Fokus auf praktischer Arbeit</li>
+</ul>
+</section><section id="nicht-in-dieser-präsentation" class="slide level2">
+<h1>Nicht in dieser Präsentation</h1>
+<ul>
+<li>Einführung</li>
+<li>Zu viel Theorie</li>
+<li>Nicht verwendete Algorithmen, Distanzmaße, Ähnlichkeitsmaße</li>
+</ul>
+</section></section>
+<section><section id="dataset-preprocessing" class="titleslide slide level1"><h1>Dataset &amp; Preprocessing</h1></section><section id="dataset" class="slide level2">
+<h1>Dataset</h1>
+<p>Das für die Evaluation verwendete Datenset ist das scientific dataset, welches auch in scisumm verwendet wird. Es ist auf github zur Verfügung gestellt:</p>
+<pre><code>https://github.com/WING-NUS/scisumm-corpus  </code></pre>
+<p>Das Set beinhaltet zehn Klassen mit jeweils einer Peer-Zusammenfassung und ist weiter unterteilt in Trainings-, Test- und Evaluations-Daten.</p>
+</section><section id="sentence-recognition" class="slide level2">
+<h1>Sentence recognition</h1>
+<p>Da Sätze die kleinste Einheit von Sentence-Clustering darstellen, müssen sie erkannt werden. Das geschieht in diesem Fall durch das Python Modul SpaCy.</p>
+<p>Es ist in der Lage Sätze schnell und zuverlässig in unterschiedlichen Sprachen zu erkennen.<br />Es kann zusätzlich POS-Tags erstellen sowie syntaktische Ähnlichkeiten und Named Entities erkennen.</p>
+</section><section id="clean-up" class="slide level2">
+<h1>Clean-up</h1>
+<p>Zum Erfolg von Sentence Clustering trägt das Preprocessing maßgeblich bei.</p>
+<p>Da einige Algorithmen auch auf Wortebene vergleichen, und Satzabstands/-ähnlichkeits Maße oft auf Wortebene agieren, ist es notwendig den Korpus im Vorhinein zu bereinigen:</p>
+<ul>
+<li>Stopwörter werden mittels NLTK-Stopwords entfernt</li>
+<li>Zu kurze Wörter werden entfernt</li>
+<li>Zu kurze Sätze werden nicht mit einbezogen</li>
+<li>Sätze werden nicht mit einbezogen wenn sie zu viele Sonderzeichen enthalten</li>
+<li>Die Sätze werden dann in ihrer originalen Reihenfolge als Python-List abgespeichert</li>
+</ul>
+</section></section>
+<section><section id="histogram-based-approach" class="titleslide slide level1"><h1>Histogram-based approach</h1></section><section id="theorie" class="slide level2">
+<h1>Theorie</h1>
+<p>Der Satzabstand/Die Satzähnlichkeit wird berechnet durch einen simplen BOW Algorithmus bei dem Wort-Unigramme zweier Sätze verglichen werden:</p>
+<p><span class="math">\[ Sim(S_i,S_j) = \frac{ (2 \cdot |S_i \cap S_j|) }{ (|S_i| + |S_j|) } \]</span></p>
+<p>Hier sind <span class="math">\(S_i, S_j\)</span> die zwei Sätze, die verglichen werden sollen und <span class="math">\(|S_i|\)</span> ist die Länge des Satzes i</p>
+<p>Für jeden Satz des Input Dokumentes wird nun der Satzabstand zu jedem Cluster berechnet.<br />Der Satz wird zu dem Cluster hinzugefügt, der am 'stärksten' verbessert wird; falls kein Cluster ausreichend verbessert wird, erstellt der Algorithmus einen neuen Cluster der den Satz enthält.</p>
+<p>Die Histogram-ratio wird für jeden Cluster gespeichert.</p>
+</section><section id="histogram-ratio" class="slide level2">
+<h1>Histogram Ratio</h1>
+<p><span class="math">\[ {HR}_c = \frac{ \sum_{i=T}^{B} h_i} { \sum_{j=1}^{B} h_j} \]</span></p>
+<p>Hier ist T das Threshold-Bin, B das höchste belegte Bin und <span class="math">\(h_i,h_j\)</span> die Anzahl an Elementen in dem entsprechenden bin.</p>
+</section><section id="ablauf" class="slide level2">
+<h1>Ablauf</h1>
+<p><img src="./Images/05_hist_bin.png" class="center" alt="Drawing" style="width: 500px;"/></p>
+</section></section>
+<section><section id="single-document-approach" class="titleslide slide level1"><h1>Single-document approach</h1></section><section id="theorie-1" class="slide level2">
+<h1>Theorie</h1>
+<p>Die Sätze der einzelnen Dokumente werden mit Wertigkeit versehen, die sich aus 4 Features bildet:</p>
+<p><span class="math">\[ DF = w_1 + w_2 + ... + w_n \]</span> <span class="math">\[ SRI = \cases{1 &amp; if following sentence has pronoun
+                                           ,\cr 0 &amp; otherwise \cr}\]</span></p>
+<p>CS ist die Anzahl an Matches von Synsets der Query zu einem Satz.<br />LF ist gewichtet nach der Position des Satzes im Dokument.</p>
+<p><span class="math">\[ SW = v \cdot DF + w \cdot LF + x \cdot SRI + y \cdot CS\]</span></p>
+<p>Die Sätze werden dann mit dem maximalen Gewicht eines Dokumentes normalisiert.</p>
+<p>Anschließend können die <span class="math">\(n\)</span> am stärksten gewichteten Sätze extrahiert werden, ihre originale Position im Dokument wird dabei beibehalten.</p>
+<p>Die daraus entstandenen Sätze werden dann mittels den folgenden Satzabstandsmaßen geclustert:</p>
+</section><section id="theorie-2" class="slide level2">
+<h1>Theorie</h1>
+<p><strong>Syntaktische Ähnlichkeit</strong>:</p>
+<p>Um die syntaktische Ähnlichkeit zu berechnen werden die zwei zu vergleichenden Sätze in Vektoren umgewandelt, welche dann ermöglichen die syntaktische Ähnlichkeit anhand der Werte der Vektoren zu berechnen.</p>
+<ol type="1">
+<li>The red car drives faster than the green car</li>
+<li>The green car drives faster than the red car</li>
+</ol>
+<p><span class="math">\[ v0 (1): [1,2,3,4,5,6,7,8,9] \]</span> <span class="math">\[ vr (2): [1,8,3,4,5,6,1,2,3] \]</span></p>
+<p>Die syntaktische Ähnlichkeit kann dann als Kosinus-Koeffizient der beiden Vektoren berechnet werden.</p>
+</section><section id="theorie-3" class="slide level2">
+<h1>Theorie</h1>
+<p><strong>Semantische Ähnlichkeit</strong>:</p>
+<p>Die semantische Ähnlichkeit wird berechnet aus mehreren Faktoren:</p>
+<ul>
+<li><p>Der kürzeste Pfad zwischen zwei Worten aus den zu vergleichenden Sätzen, basierend auf WordNet Hierarchie</p></li>
+<li><p>Die Tiefe des ersten gemeinsamen Parents von beiden Wörtern in einem WordNet Graphen</p></li>
+</ul>
+<p>Beide können dann vereint werden durch die Funktion:</p>
+<p><span class="math">\[ S_w(w_i,w_j) = \frac{f(d)}{f(d)+f(l)} \]</span></p>
+<p>Der information content, der benötigt wird um die semantische Ähnlichkeit zweier Sätze zu berechnen, stellt sich wie folgt dar:</p>
+<p><span class="math">\[ I(w) = -\frac{\log p (w)}{(log N+1)} \]</span></p>
+</section><section id="ablauf-1" class="slide level2">
+<h1>Ablauf</h1>
+<figure>
+<img src="./Images/single_doc.svg" />
+</figure>
+</section></section>
+<section><section id="postprocessing" class="titleslide slide level1"><h1>Postprocessing</h1></section><section id="rekonstruktion" class="slide level2">
+<h1>Rekonstruktion</h1>
+<p>Die Rekonstruktion der Sätze ist relativ simpel.<br />Da sie vor dem Preprocessing in einer separaten Liste gespeichert werden, kann einfach auf ihren Index zugegriffen werden und somit ist der Satz wiederhergestellt.</p>
+</section><section id="cluster-ordering" class="slide level2">
+<h1>Cluster-Ordering</h1>
+<p>Da die Cluster in einer fixen Reihenfolge gespeichert werden, die nicht unbedingt der Reihenfolge der Sätze in einem Dokument entspricht, ist es notwendig, sie nach ihrer Relevanz zu ordnen.<br />Dafür stehen unterschiedliche Methoden zur Verfügung:</p>
+<ul>
+<li><p>Ordnen nach Größe der Cluster</p></li>
+<li><p>Log-count sorting</p></li>
+</ul>
+<p><span class="math">\[ W(C) = \displaystyle\sum_{w \in C} \log (1+\text{count}(w)) \;\;\;\;\;\;c &gt; th \]</span></p>
+<p>Hier ist <span class="math">\(W(C)\)</span> das Gewicht eines Clusters, count(<span class="math">\(w\)</span>) ist die Anzahl an Vorkommen, die das wort <span class="math">\(w\)</span> im input besitzt.</p>
+</section><section id="sentence-selection" class="slide level2">
+<h1>Sentence Selection</h1>
+<p>Um die Sätze mit höchstem Informationsgehalt in die Zusammenfassung aufzunehmen, und die mit geringerem Informationsgehalt zu verwerfen, ist es notwendig den Informationsgehalt zu messen.<br />Dazu werden die folgenden Methoden vorgeschlagen:</p>
+<ul>
+<li>Arbitrary - Zufallsauswahl</li>
+<li>Longest candidate - der längste Satz jedes Clusters</li>
+<li>Centroid similarity - Ähnlichkeit des Satzes zum Centroid <span class="math">\(log(1+\text{term frequency})\)</span></li>
+<li>Local-global importance - Informationsgehalt jedes Satzes im Verhältnis zum Cluster und allen Dokumenten</li>
+</ul>
+</section></section>
+<section><section id="zusammenfassend" class="titleslide slide level1"><h1>Zusammenfassend</h1></section><section id="evaluationsergebnisse" class="slide level2">
+<h1>Evaluationsergebnisse</h1>
+<table class="center">
+<thead>
+<tr>
+<th>
+Document
+</th>
+<th>
+ROUGE-1-R HR
+</th>
+<th>
+ROUGE-1-R SD
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+NO1
+</td>
+<td>
+0.196
+</td>
+<td>
+0.366
+</td>
+</tr>
+<tr>
+<td>
+H89
+</td>
+<td>
+0.354
+</td>
+<td>
+0.388
+</td>
+</tr>
+<tr>
+<td>
+J00
+</td>
+<td>
+0.203
+</td>
+<td>
+0.236
+</td>
+</tr>
+<tr>
+<td>
+J98
+</td>
+<td>
+0.363
+</td>
+<td>
+0.321
+</td>
+</tr>
+<tr>
+<td>
+X96
+</td>
+<td>
+0.446
+</td>
+<td>
+0.250
+</td>
+</tr>
+<tr>
+<td>
+P98
+</td>
+<td>
+0.255
+</td>
+<td>
+0.277
+</td>
+</tr>
+<tr>
+<td>
+Average
+</td>
+<td>
+0.297
+</td>
+<td>
+0.306
+</td>
+</tr>
+</tr>
+</tbody>
+</table>
+</section></section>
+<section><section id="quellen" class="titleslide slide level1"><h1>Quellen</h1></section></section>
+    </div>
+  </div>
+
+  <script src="reveal.js/lib/js/head.min.js"></script>
+  <script src="reveal.js/js/reveal.min.js"></script>
+
+  <script>
+
+      // Full list of configuration options available here:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        controls: true,
+        progress: true,
+        history: true,
+        center: true,
+        slideNumber: true,
+        theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+        transition: 'zoom', // default/cube/page/concave/zoom/linear/fade/none
+        math: {
+                mathjax: 'https://cdn.mathjax.org/mathjax/latest/MathJax.js',
+                config: 'TeX-AMS_HTML-full',  // See http://docs.mathjax.org/en/latest/config-files.html
+                displaAlign: 'left'
+            },
+        // Optional libraries used to extend on reveal.js
+        dependencies: [
+          { src: 'reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+          { src: 'reveal.js/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+          { src: 'reveal.js/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } },
+          { src: 'reveal.js/plugin/math/math.js', async: true }
+//          { src: 'reveal.js/plugin/remotes/remotes.js', async: true, condition: function() { return !!document.body.classList; } }
+]});
+    </script>
+  </body>
+</html>
